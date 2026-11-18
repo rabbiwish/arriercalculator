@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>বকেয়া বিল ক্যালকুলেটর | Government Pay Arrear Bill Verification System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header>
+  <div class="wrap header-flex">
+    <div>
+      <h1>বকেয়া বিল ক্যালকুলেটর (Government Pay Arrear Bill Verification System)</h1>
+      <p>জাতীয় বেতন স্কেল ২০১৫ ও নতুন বেতন স্কেল ২০২৬ • মোট প্রাপ্য − মোট উত্তোলিত = নিট বকেয়া</p>
+    </div>
+    <div class="inline">
+      <button type="button" id="btnOpenTests" class="green-btn sm-btn">✔ ১৫টি টেস্ট লজিক যাচাই</button>
+      <button type="button" onclick="window.print()" class="secondary sm-btn">🖨 প্রিন্ট / PDF</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div class="note no-print">
+    <b>হিসাবের মূলনীতি:</b>
+    প্রাপ্য বাড়ি ভাড়া ৩০/০৬/২০২৬-এর মূল বেতন ও পুরোনো চার্টে হিসাব হবে।
+    উত্তোলিত বাড়ি ভাড়া ০১/০৭/২০২৬ থেকে উত্তোলিত মূল বেতন ও নতুন চার্টে হিসাব হবে।
+    সরকারি বাসভবনে থাকলে উভয় বাড়ি ভাড়া শূন্য।
+    স্পেশাল বেনিফিট প্রাপ্য শূন্য; উত্তোলিত মূল বেতনের ইনপুট শতাংশ অনুযায়ী উত্তোলিত অংশে যোগ হবে।
+  </div>
+
+  <!-- Data Management Toolbar -->
+  <div class="toolbar-strip no-print">
+    <span class="hint" style="font-size:13px"><b>ডাটা ব্যবস্থাপনা:</b> ব্রাউজারে খসড়া সংরক্ষণ ও JSON/CSV ফাইল আদান-প্রদান</span>
+    <div class="inline">
+      <button type="button" id="btnSaveDraft" class="secondary sm-btn">💾 খসড়া সংরক্ষণ</button>
+      <button type="button" id="btnLoadDraft" class="secondary sm-btn">📂 খসড়া লোড</button>
+      <button type="button" id="btnExportJSON" class="secondary sm-btn">⬇ JSON এক্সপোর্ট</button>
+      <button type="button" id="btnImportJSON" class="secondary sm-btn">⬆ JSON ইমপোর্ট</button>
+      <input type="file" id="fileImportJSON" accept=".json,application/json" class="hidden">
+    </div>
+  </div>
+
+  <!-- SECTION 1: কর্মচারীর বেতন ও অবস্থান -->
+  <section class="card no-print">
+    <h2>১. কর্মচারীর বেতন ও অবস্থান</h2>
+
+    <div class="grid">
+      <div class="field">
+        <label for="grade">২০১৫ স্কেলের গ্রেড</label>
+        <select id="grade"></select>
+      </div>
+
+      <div class="field">
+        <label for="oldBasic">৩০/০৬/২০২৬ তারিখে মূল বেতন</label>
+        <select id="oldBasic"></select>
+        <span class="hint">নির্বাচিত গ্রেডের বেতন ধাপ।</span>
+      </div>
+
+      <div class="field">
+        <label for="drawnBasic">০১/০৭/২০২৬ থেকে উত্তোলিত মূল বেতন</label>
+        <input id="drawnBasic" type="number" min="0" step="any">
+        <span class="hint" id="incrementHint"></span>
+      </div>
+
+      <div class="field">
+        <label for="dueBasic">
+          <span>প্রাপ্য মূল বেতন</span>
+          <button type="button" id="btnOpen2026Ref" class="sm-btn green-btn" style="padding:3px 8px;font-size:11.5px">২০২৬ চার্ট দেখুন</button>
+        </label>
+        <input id="dueBasic" type="number" min="0" step="any" placeholder="প্রাপ্য মূল বেতন ইনপুট দিন">
+        <span class="hint" id="dueBasicHint">স্বয়ংক্রিয়ভাবে গ্রেড অনুযায়ী (১-৯: ৪০%, ১০-২০: ৫০%) নির্ধারিত (প্রয়োজনে সম্পাদনাযোগ্য)</span>
+      </div>
+
+      <div class="field hidden" id="housingField">
+        <label for="housing">সরকারি বাসভবনে থাকেন?</label>
+        <select id="housing">
+          <option value="no">না</option>
+          <option value="yes">হ্যাঁ</option>
+        </select>
+        <span class="hint">সরকারি বাসভবনে থাকলে উভয় বাড়ি ভাড়া শূন্য।</span>
+      </div>
+
+      <div class="field hidden" id="areaField">
+        <label for="area">বাড়ি ভাড়ার এলাকা</label>
+        <select id="area">
+          <option value="dhaka">ঢাকা সিটি কর্পোরেশন</option>
+          <option value="major">নির্ধারিত সিটি কর্পোরেশন / সাভার</option>
+          <option value="other">অন্যান্য স্থান</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="specialRate">উত্তোলিত স্পেশাল বেনিফিট (%)</label>
+        <input id="specialRate" type="number" min="0" max="100" step="0.01" value="10">
+        <span class="hint">গ্রেড ১-৯: ১০%, গ্রেড ১০-২০: ১৫% (চাকরিরতদের ক্ষেত্রে ন্যূনতম ১,৫০০ টাকা)</span>
+      </div>
+    </div>
+
+    <!-- Live Monthly Rate Preview Strip -->
+    <div class="preview-strip">
+      <div class="preview-box due">
+        <small class="hint">মাসিক প্রাপ্য বাড়ি ভাড়া (পুরোনো চার্ট)</small>
+        <strong id="previewDueRent" style="font-size:18px;display:block;color:var(--green)">৳ ০</strong>
+        <span class="hint" id="previewDueRentMeta"></span>
+      </div>
+      <div class="preview-box">
+        <small class="hint">মাসিক উত্তোলিত বাড়ি ভাড়া (নতুন চার্ট)</small>
+        <strong id="previewDrawnRent" style="font-size:18px;display:block;color:var(--navy)">৳ ০</strong>
+        <span class="hint" id="previewDrawnRentMeta"></span>
+      </div>
+      <div class="preview-box special">
+        <small class="hint">মাসিক উত্তোলিত স্পেশাল বেনিফিট</small>
+        <strong id="previewSpecial" style="font-size:18px;display:block;color:var(--amber)">৳ ০</strong>
+        <span class="hint" id="previewSpecialMeta"></span>
+      </div>
+    </div>
+
+    <div class="inline" style="margin-top:14px">
+      <button id="recalc" type="button">হিসাব হালনাগাদ</button>
+      <button class="secondary" id="reset" type="button">রিসেট</button>
+    </div>
+
+    <div id="validationBox"></div>
+  </section>
+
+  <!-- SECTION 2: বকেয়ার সময়সীমা -->
+  <section class="card no-print">
+    <h2>২. বকেয়ার সময়সীমা</h2>
+
+    <div class="grid">
+      <div class="field">
+        <label for="months">মোট মাস (১ – ৩৬ মাস)</label>
+        <select id="months"></select>
+      </div>
+
+      <div class="field">
+        <label for="startDate">শুরুর তারিখ</label>
+        <input id="startDate" type="date" value="2026-07-01">
+      </div>
+
+      <div class="field">
+        <label for="endLabel">হিসাবের শেষ মাস</label>
+        <input id="endLabel" type="text" readonly>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: মাসভিত্তিক প্রাপ্য ও উত্তোলিত হিসাব -->
+  <section class="card no-print">
+    <h2>৩. মাসভিত্তিক প্রাপ্য ও উত্তোলিত হিসাব</h2>
+
+    <p class="hint" style="margin-top:0;margin-bottom:10px">
+      প্রাপ্য ও উত্তোলিত মূল বেতন, বাড়ি ভাড়া এবং স্পেশাল বেনিফিট প্রতিটি মাসে স্বয়ংক্রিয়ভাবে হিসাব হবে; প্রয়োজনে প্রতিটি ঘর আলাদাভাবে সম্পাদনা করা যাবে।
+    </p>
+
+    <div class="tablewrap">
+      <table id="monthlyTable">
+        <thead>
+          <tr>
+            <th>মাস</th>
+            <th>প্রাপ্য মূল বেতন</th>
+            <th>প্রাপ্য বাড়ি ভাড়া</th>
+            <th>মোট প্রাপ্য</th>
+            <th>উত্তোলিত মূল বেতন</th>
+            <th>উত্তোলিত বাড়ি ভাড়া</th>
+            <th>স্পেশাল বেনিফিট</th>
+            <th>মোট উত্তোলিত</th>
+            <th>মাসের বকেয়া</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <th colspan="8">মোট বকেয়া</th>
+            <th id="grossTotalCell">৳ ০</th>
+          </tr>
+          <tr>
+            <th colspan="8">রেভিনিউ স্ট্যাম্প চার্জ কর্তন (−)</th>
+            <th id="stampCell">৳ ১০</th>
+          </tr>
+          <tr>
+            <th colspan="8">সর্বমোট নিট বকেয়া (স্ট্যাম্প কর্তন বাদে)</th>
+            <th id="totalCell">৳ ০</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 4: চূড়ান্ত হিসাবের সারাংশ -->
+  <section class="card no-print">
+    <h2>৪. চূড়ান্ত হিসাবের সারাংশ</h2>
+
+    <div class="kpis hidden">
+      <div class="kpi">
+        <small>মোট প্রাপ্য মূল বেতন</small>
+        <strong id="dueBasicTotal">৳ ০</strong>
+      </div>
+
+      <div class="kpi">
+        <small>মোট প্রাপ্য বাড়ি ভাড়া</small>
+        <strong id="dueRentTotal">৳ ০</strong>
+      </div>
+
+      <div class="kpi">
+        <small>সর্বমোট প্রাপ্য</small>
+        <strong id="dueTotal">৳ ০</strong>
+      </div>
+
+      <div class="kpi">
+        <small>মোট উত্তোলিত মূল বেতন</small>
+        <strong id="drawnBasicTotal">৳ ০</strong>
+      </div>
+
+      <div class="kpi">
+        <small>মোট উত্তোলিত বাড়ি ভাড়া</small>
+        <strong id="drawnRentTotal">৳ ০</strong>
+      </div>
+
+      <div class="kpi">
+        <small>মোট উত্তোলিত স্পেশাল বেনিফিট</small>
+        <strong id="specialTotal">৳ ০</strong>
+      </div>
+
+      <div class="kpi">
+        <small>সর্বমোট উত্তোলিত</small>
+        <strong id="drawnTotal">৳ ০</strong>
+      </div>
+
+      <div class="kpi">
+        <small>মোট বকেয়া (স্ট্যাম্প বাদে)</small>
+        <strong id="grossAreaTotal">৳ ০</strong>
+      </div>
+
+      <div class="kpi">
+        <small>স্ট্যাম্প চার্জ কর্তন</small>
+        <strong id="stampChargeTotal">৳ ১০</strong>
+      </div>
+    </div>
+
+    <div class="result" style="margin-top:13px">
+      <div>
+        <small>নিট বকেয়া বিল (১০ টাকা স্ট্যাম্প চার্জ কর্তন বাদে সর্বমোট প্রাপ্য)</small><br>
+        <strong id="netArea">৳ ০</strong>
+        <div id="status" class="hint"></div>
+      </div>
+      <div class="inline">
+        <button type="button" onclick="window.print()">🖨 প্রিন্ট / PDF</button>
+        <button type="button" class="secondary" id="csv">📊 CSV ডাউনলোড</button>
+      </div>
+    </div>
+
+    <div class="scenario-section" aria-label="সরকারি বাসভবন ও এলাকা ভিত্তিক অটো নিট বকেয়া বিল">
+      <div class="scenario-header">
+        <h3>অটো তুলনামূলক নিট বকেয়া বিল (১০ টাকা স্ট্যাম্প চার্জ কর্তন বাদে)</h3>
+        <span class="hint">সরকারি বাসভবনে থাকা ও না থাকার (এলাকা ভিত্তিক) সকল হিসাব একসাথে; যেকোনো কার্ডে ক্লিক করলে উপরের হিসাব সেট হবে।</span>
+      </div>
+      <div id="autoScenarioGrid" class="scenario-grid"></div>
+    </div>
+
+    <p class="hint" id="formula" style="margin-bottom:0"></p>
+  </section>
+
+  <!-- SECTION 5: বাড়ি ভাড়া চার্টের হার (পুরোনো ও নতুন চার্ট) -->
+  <section class="card no-print hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2 style="margin:0;border:0;padding:0">৫. বাড়ি ভাড়া চার্টের হার</h2>
+      <button type="button" id="resetRatesBtn" class="secondary sm-btn">↺ ডিফল্ট চার্ট হারে ফিরিয়ে নিন</button>
+    </div>
+
+    <p class="hint">
+      নিচের হারগুলো প্রাথমিক হার হিসেবে রাখা হয়েছে।
+      আপনার অনুমোদিত চূড়ান্ত চার্ট অনুযায়ী হার (%) ও সর্বনিম্ন অঙ্ক (৳) সম্পাদনা করুন।
+    </p>
+
+    <h3>প্রাপ্য বাড়ি ভাড়া — পুরোনো চার্ট (৩০/০৬/২০২৬ মূল বেতনের ওপর প্রযোজ্য)</h3>
+    <div class="tablewrap">
+      <table id="oldRateTable">
+        <thead>
+          <tr>
+            <th style="text-align:left">এলাকা</th>
+            <th>৯,৭০০ পর্যন্ত</th>
+            <th>৯,৭০১–১৬,০০০</th>
+            <th>১৬,০০১–৩৫,৫০০</th>
+            <th>৩৫,৫০০-এর বেশি</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h3>উত্তোলিত বাড়ি ভাড়া — নতুন চার্ট (০১/০৭/২০২৬ হতে উত্তোলিত মূল বেতনের ওপর প্রযোজ্য)</h3>
+    <div class="tablewrap">
+      <table id="newRateTable">
+        <thead>
+          <tr>
+            <th style="text-align:left">এলাকা</th>
+            <th>৯,৭০০ পর্যন্ত</th>
+            <th>৯,৭০১–১৬,০০০</th>
+            <th>১৬,০০১–৩৫,৫০০</th>
+            <th>৩৫,৫০০-এর বেশি</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 6: বকেয়া বেতন বিল যাচাই বিবরণী (প্রিন্ট ও অফিসিয়াল রিপোর্ট) -->
+  <section class="card print-only" id="printReportCard">
+    <div style="text-align:center;margin-bottom:14px;border-bottom:2px solid var(--navy);padding-bottom:10px">
+      <div style="font-size:13px;color:var(--muted);font-weight:600">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+      <h2 style="margin:4px 0;border:0;padding:0;font-size:21px">বকেয়া বেতন বিল যাচাই বিবরণী</h2>
+      <div class="hint">মোট প্রাপ্য − মোট উত্তোলিত = নিট বকেয়া বিল</div>
+    </div>
+
+    <div class="report-meta">
+      <div><span>বেতন গ্রেড:</span><strong id="repGrade">—</strong></div>
+      <div><span>৩০/০৬/২০২৬ মূল বেতন:</span><strong id="repOldBasic">—</strong></div>
+      <div><span>উত্তোলিত মূল বেতন:</span><strong id="repDrawnBasic">—</strong></div>
+      <div><span>প্রাপ্য মূল বেতন:</span><strong id="repDueBasic">—</strong></div>
+      <div><span>বাড়ি ভাড়ার এলাকা:</span><strong id="repArea">—</strong></div>
+      <div><span>স্পেশাল বেনিফিট হার:</span><strong id="repSpecialRate">—</strong></div>
+      <div><span>বকেয়ার সময়কাল:</span><strong id="repPeriod">—</strong></div>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>মাস</th>
+            <th>প্রাপ্য মূল বেতন</th>
+            <th>প্রাপ্য বাড়ি ভাড়া</th>
+            <th>মোট প্রাপ্য</th>
+            <th>উত্তোলিত মূল বেতন</th>
+            <th>উত্তোলিত বাড়ি ভাড়া</th>
+            <th>স্পেশাল বেনিফিট</th>
+            <th>মোট উত্তোলিত</th>
+            <th>মাসের বকেয়া</th>
+          </tr>
+        </thead>
+        <tbody id="repTableBody"></tbody>
+        <tfoot id="repTableFoot"></tfoot>
+      </table>
+    </div>
+
+    <div class="sig-grid">
+      <div>প্রস্তুতকারকের স্বাক্ষর</div>
+      <div>হিসাব রক্ষণ ও নিরীক্ষা কর্মকর্তার স্বাক্ষর</div>
+      <div>আয়ন ও ব্যয়ন কর্মকর্তা (DDO)-এর স্বাক্ষর</div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Modal: 2026 Pay Scale Reference Chart -->
+<div id="modal2026" class="modal-overlay hidden no-print">
+  <div class="modal-box">
+    <div class="modal-head">
+      <strong>জাতীয় বেতন স্কেল ২০২৬ (রেফারেন্স চার্ট)</strong>
+      <button type="button" id="btnClose2026Modal" class="secondary sm-btn">✕ বন্ধ করুন</button>
+    </div>
+    <div class="modal-content" id="modal2026Body"></div>
+  </div>
+</div>
+
+<!-- Modal: 15-Test Verification Suite -->
+<div id="modalTests" class="modal-overlay hidden no-print">
+  <div class="modal-box">
+    <div class="modal-head">
+      <strong>১৫টি টেস্ট কেস ও লজিক যাচাই প্রতিবেদন</strong>
+      <button type="button" id="btnCloseTestModal" class="secondary sm-btn">✕ বন্ধ করুন</button>
+    </div>
+    <div class="modal-content" id="modalTestBody"></div>
+  </div>
+</div>
+
+<footer class="no-print">
+  অফলাইন HTML ক্যালকুলেটর · কোনো তথ্য সার্ভারে পাঠানো হয় না।
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
